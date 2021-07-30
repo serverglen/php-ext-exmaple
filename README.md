@@ -252,7 +252,15 @@ example
 
 example support => enabled
 ```
-如果执行php/bin/php --ri example，那么说明example扩展已经安装成功了
+如果执行php/bin/php --ri example，那么说明example扩展已经安装成功了。
+当然我们还可以用源码中的example.php文件测试一下
+```
+$ $PHP_HOME/php/bin/php example.php
+Functions available in the test extension:
+confirm_example_compiled
+
+Congratulations! You have successfully modified ext/example/config.m4. Module example is now compiled into PHP.
+```
 
 # 参考文档
 

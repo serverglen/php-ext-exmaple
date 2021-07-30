@@ -1,5 +1,23 @@
-# php-ext-exmaple
-这是一个php扩展的示例，主要介绍如何用C++快速开发一个php扩展。
+- [简介](#简介)
+- [下载php源码](#下载php源码)
+- [生成扩展代码](#生成扩展代码)
+- [修改文件](#修改文件)
+- [编译扩展](#编译扩展)
+  - [根据config.m4文件生成configure文件](#根据configm4文件生成configure文件)
+  - [编译](#编译)
+- [测试扩展](#测试扩展)
+  - [修改php.ini文件](#修改phpini文件)
+  - [拷贝example扩展](#拷贝example扩展)
+  - [验证扩展是否加载成功](#验证扩展是否加载成功)
+- [实现自己的扩展函数](#实现自己的扩展函数)
+  - [函数声明](#函数声明)
+  - [函数实现和注册](#函数实现和注册)
+  - [编译](#编译-1)
+  - [测试](#测试)
+- [参考文档](#参考文档)
+
+# 简介
+这是一个php扩展的示例，主要介绍如何用C/C++快速开发一个php扩展。
 
 # 下载php源码
 基于php-7.0.33来编写扩展
@@ -261,6 +279,109 @@ confirm_example_compiled
 
 Congratulations! You have successfully modified ext/example/config.m4. Module example is now compiled into PHP.
 ```
+
+# 实现自己的扩展函数
+到现在为止，我们已经把扩展的架子搭好了，下来我们实现几个自定义的函数，然后在php中调用这些函数来给大家演示下如何在扩展中实现自己的函数。
+
+## 函数声明
+在php_example.h文件 #endif	/* PHP_EXAMPLE_H */ 行之前增加如下内容：
+```
+// 声明全局函数 求和
+PHP_FUNCTION(example_sum);
+// 声明全局函数 echo
+PHP_FUNCTION(example_echo);
+```
+这里我们增加两个函数example_sum(求两个数之和)和example_echo(输出一个字符串)。
+
+## 函数实现和注册
+在example.c文件中增加如下内容：
+```C
+/**
+ * @params double num1
+ * @params double num2
+ * @return double sum
+ * @bref
+ * 实现全局函数 example_sum
+ * */
+PHP_FUNCTION(example_sum)
+{
+    double num1,num2,sum;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dd", &num1, &num2) == FAILURE) {
+        RETURN_FALSE;
+    }
+    sum = num1 + num2;
+    // RETURN_* 的定义在zend_API.h中
+    RETURN_DOUBLE(sum);
+}
+ 
+/**
+ * @params string 
+ * @return string
+ * @bref
+ * 实现全局函数 example_echo
+ * */
+PHP_FUNCTION(example_echo)
+{
+    char *arg = NULL;
+    size_t arg_len, len;
+    zend_string *strg;
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len) == FAILURE) {
+        return;
+    }
+
+    strg = strpprintf(0, "%.78s", arg);
+    RETURN_STR(strg);
+}
+```
+注册函数，同样函数修改example.c文件，找到example_functions定义的地方，然后注册example_sum和example_echo方法
+```C
+/* {{{ example_functions[]
+ *
+ * Every user visible function must have an entry in example_functions[].
+ */
+const zend_function_entry example_functions[] = {
+    PHP_FE(confirm_example_compiled,    NULL)       /* For testing, remove later. */
+    PHP_FE(example_sum,                 NULL)       /* register global example_sum function */
+    PHP_FE(example_echo,                NULL)       /* register global example_echo function */
+    PHP_FE_END  /* Must be the last line in example_functions[] */
+};
+/* }}} */
+```
+
+## 编译
+```
+$ $PHP_HOME/php/bin/phpize
+$ ./configure --with-php-config=$PHP_HOME/php/bin/php-config --enable-example
+$ make -j4
+```
+生成的example.so在modules目录下，将其拷贝到对应的目录
+```
+cp -rf modules/example.so /home/work/php/ext
+```
+## 测试
+验证example扩展是否加载成功
+```
+$ $PHP_HOME/php/bin/php --ri example
+```
+
+编写php文件测试扩展函数功能，新建test_example.php文件内容如下：
+```
+<?php
+
+$num1 = 1.1;
+$num2 = 2.2;
+var_dump(example_sum($num1, $num2));
+
+$str = "hello world";
+var_dump(example_echo($str));
+```
+执行test_example.php
+```
+$ $PHP_HOME/php/bin/php test_example.php
+float(3.3)
+string(11) "hello world"
+```
+如果输出如上内容，那么恭喜你，说明你已经测试通过啦，晚上给自己加个鸡腿吧！
 
 # 参考文档
 

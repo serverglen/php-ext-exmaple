@@ -1,2 +1,2 @@
 # php-ext-exmaple
-A PHP extension example, guides you through implementing a PHP extension in C.
+这是一个php扩展的示例，主要介绍如何用C++快速开发一个php扩展。
